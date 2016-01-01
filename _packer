@@ -1,0 +1,93 @@
+#compdef packer
+
+__packer_json_templates() {
+  declare -a template
+  template=($(ls -1 *.json))
+  _describe 'templates' template
+}
+
+local -a _packer_cmds
+_packer_cmds=(
+  'build:build image(s) from template'
+  'fix:fixes templates from old versions of packer'
+  'inspect:see components of a template'
+  'push:push a template and supporting files to a Packer build service'
+  'validate:check that a template is valid'
+  'version:Prints the Packer version'
+)
+
+__build() {
+  _arguments \
+    '-debug[Debug mode enabled for builds]' \
+    '-force[Force a build to continue if artifacts exist, deletes existing artifacts]' \
+    '-machine-readable[Machine-readable output]' \
+    '-except=[(foo,bar,baz)  Build all builds other than these]' \
+    '-only=[(foo,bar,baz)  Only build the given builds by name]' \
+    '-parallel=[(false)  Disable parallelization (on by default)]' \
+    '-var[("key=value")  Variable for templates, can be used multiple times.]' \
+    '-var-file=[(path)  JSON file containing user variables.]'
+  __packer_json_templates
+}
+
+local -a _packer_fix_cmds
+_packer_fix_cmds=(
+  'iso-md5:Replaces "iso_md5" in builders with newer "iso_checksum"'
+  'createtime:Replaces ".CreateTime" in builder configs with "{{timestamp}}"'
+  'virtualbox-gaattach:Updates VirtualBox builders using "guest_additions_attach" to use "guest_additions_mode"'
+  'pp-vagrant-override:Replaces old-style provider overrides for the Vagrant post-processor to new-style as of Packer 0.5.0.'
+  'virtualbox-rename:Updates "virtualbox" builders to "virtualbox-iso"'
+)
+
+__fix() {
+  _describe -t commands "packer fix command" _packer_fix_cmds
+  _arguments \
+    '-validate=[(true)  If true (default), validates the fixed template.]'
+  __packer_json_templates
+}
+
+__inspect() {
+  _arguments \
+    '-machine-readable[Machine-readable output]'
+  __packer_json_templates
+}
+
+__push() {
+  _arguments \
+    '-message=[(<detail>)  A message to identify the purpose or changes in this Packer template much like a VCS commit message]' \
+    '-name=[(<name>)  The destination build in Atlas. This is in a format "username/name".]' \
+    '-token=[(<token>)  The access token to use to when uploading]' \
+    '-var[("key=value")  Variable for templates, can be used multiple times.]' \
+    '-var-file=[(path)  JSON file containing user variables.]'
+  __packer_json_templates
+}
+
+__validate() {
+  _arguments \
+    '-syntax-only[Only check syntax. Do not verify config of the template.]' \
+    '-except=[(foo,bar,baz)  Validate all builds other than these]' \
+    '-only=[(foo,bar,baz)  Validate only these builds]' \
+    '-var[("key=value")  Variable for templates, can be used multiple times.]' \
+    '-var-file=[(path)  JSON file containing user variables.]'
+  __packer_json_templates
+}
+
+_arguments '*:: :->command'
+
+if (( CURRENT == 1 )); then
+  _describe -t commands "packer command" _packer_cmds
+  return
+fi
+
+local -a _command_args
+case "$words[1]" in
+  build)
+    __build ;;
+  fix)
+    __fix ;;
+  inspect)
+    __inspect ;;
+  push)
+    __push ;;
+  validate)
+    __validate ;;
+esac
