@@ -2,7 +2,7 @@
 
 __packer_json_templates() {
   declare -a template
-  template=($(ls -1 *.json))
+  template=($(find . -type f -name '*.json' | sed -e 's/\.\///g'))
   _describe 'templates' template
 }
 
