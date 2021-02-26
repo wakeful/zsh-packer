@@ -6,12 +6,20 @@ __packer_json_templates() {
   _describe 'templates' template
 }
 
+__packer_hcl_templates() {
+  declare -a template
+  template=($(find . -maxdepth 1 -type f -name '*.hcl' | sed -e 's/\.\///g'))
+  _describe 'templates' template
+}
+
 local -a _packer_cmds
 _packer_cmds=(
   'build:build image(s) from template'
   'console:creates a console for testing variable interpolation'
   'fix:fixes templates from old versions of packer'
+  'fmt:Rewrites HCL2 config files to canonical format'
   'hcl2_upgrade:transform a JSON template into a HCL2 configuration'
+  'init:Install missing plugins or upgrade plugins'
   'inspect:see components of a template'
   'validate:check that a template is valid'
   'version:Prints the Packer version'
@@ -28,8 +36,8 @@ __build() {
     '-on-error=[(cleanup|abort|ask|run-cleanup-provisioner) If the build fails do: clean up (default), abort, ask, or run-cleanup-provisioner.]' \
     '-parallel-builds=[(1) Number of builds to run in parallel. 1 disables parallelization. 0 means no limit (Default: 0)]' \
     '-timestamp-ui=[Enable prefixing of each ui output with an RFC3339 timestamp.]' \
-    '-var-file=[(path)  JSON file containing user variables.]' \
     '-var[("key=value")  Variable for templates, can be used multiple times.]'
+    '-var-file=[(path)  JSON or HCL2 file containing user variables.]' \
   __packer_json_templates
 }
 
@@ -67,13 +75,23 @@ _packer_fix_cmds=(
   'vsphere-iso-net-disk:Removes deprecated network and disk fields from "vsphere-iso" builder'
   'iso-checksum-type-and-url:Puts content of potential "iso_checksum_url" and "iso_checksum_url" in "iso_checksum"'
   'qemu-host-port:Updates ssh_host_port_min and ssh_host_port_max to host_port_min and host_port_max'
+  'azure-exclude_from_latest:Changes "exlude_from_latest" to "exclude_from_latest" in Azure builders.'
+  'proxmox-type:Upgrades the builder type proxmox to proxmox-iso'
 )
 
 __console() {
     _arguments \
         '-var[("key=value")  Variable for templates, can be used multiple times.]' \
-        '-var-file=[(path)  JSON file containing user variables. Note that even in HCL mode this expects file to contain JSON, a fix is comming soon.]'
+        '-var-file=[(path)  JSON or HCL2 file containing user variables.]'
     __packer_json_templates
+}
+
+__fmt() {
+  _arguments \
+    '-check[Check if the input is formated. Exit status will be 0 if all input is properl formatted and non-zero otherwise.]' \
+    '-diff[Display diffs of fomatting change]' \
+    "-write=[(false) Don't write to source files (always disabled if using -check)]"
+    __packer_hcl_templates
 }
 
 __fix() {
@@ -85,7 +103,14 @@ __fix() {
 
 __hcl2_upgrade() {
   _arguments \
-    '-output-file=[(JSON_TEMPLATE.pkr.hcl) Name of the HCL2 file to write in.]'
+    '-output-file=[(PATH) Name of the HCL2 file to write in. Must have the suffix ".pkr.hcl"]' \
+    '-with-annotations[Add helper annotation comments to the file to help new HCL2 users uderstand the tempalte format.]'
+  __packer_json_templates
+}
+
+__init() {
+  _arguments \
+    '-upgrade[Upgrade installed plugins to new version if available]'
   __packer_json_templates
 }
 
@@ -101,7 +126,7 @@ __validate() {
     '-except=[(foo,bar,baz)  Validate all builds other than these]' \
     '-only=[(foo,bar,baz)  Validate only these builds]' \
     '-var[("key=value")  Variable for templates, can be used multiple times.]' \
-    '-var-file=[(path)  JSON file containing user variables. Note that even in HCL mode this expects file to contain JSON, a fix is comming soon.]'
+    '-var-file=[(path)  JSON or HCL2 file containing user variables.]'
   __packer_json_templates
 }
 
@@ -120,10 +145,14 @@ case "$words[1]" in
     __console ;;
   fix)
     __fix ;;
+  fmt)
+    __fmt ;;
   hcl2_upgrade)
       __hcl2_upgrade ;;
   inspect)
     __inspect ;;
+  init)
+    __init ;;
   validate)
     __validate ;;
 esac
